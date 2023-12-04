@@ -38,7 +38,6 @@ async function run() {
     // Custom middlewares
     // Token verify
     const verifyToken = async (req, res, next) => {
-      console.log("Insideeeeeeeeeeeee", req.headers?.authorization);
       const token = req.headers?.authorization?.split(" ")[1];
       if (!token) {
         return res.status(401).send({ message: "Unauthorized access" });
@@ -50,6 +49,18 @@ async function run() {
         req.decoded = decoded;
         next();
       })
+    }
+
+    // Admin verify
+    const verifyAdmin = async (req, res, next) => {
+      const tokenEmail = req.decoded.email;
+      const query = { email: tokenEmail };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "Forbidden access" });
+      }
+      next();
     }
 
     /*-----------------------------------------------
@@ -65,10 +76,27 @@ async function run() {
     /*-----------------------------------------------
                     Users Related APIs
     ------------------------------------------------*/
-    app.get("/users", verifyToken, async (req, res) => {
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     })
+
+    // Check isAdmin
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const tokenEmail = req.decoded.email;
+      if (email !== tokenEmail) {
+        return res.status(403).send({ message: "Forbidden access" });
+      }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === 'admin';
+      }
+      res.send({ admin });
+    })
+
     app.get("/users/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
@@ -103,7 +131,7 @@ async function run() {
       res.send(result);
     })
 
-    app.patch("/users/admin/:email", async (req, res) => {
+    app.patch("/users/admin/:email", verifyToken, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const updatedDoc = {
@@ -195,7 +223,7 @@ async function run() {
       res.send(result);
     })
 
-    app.put("/oneReview/:id", async (req, res) => {
+    app.put("/oneReview/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const review = req.body;
       const query = { _id: new ObjectId(id) };
@@ -221,7 +249,7 @@ async function run() {
       res.send(result);
     })
 
-    app.delete("/reviews/:id", async (req, res) => {
+    app.delete("/reviews/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await reviewCollection.deleteOne(query);
@@ -265,8 +293,6 @@ async function run() {
       const result = await requestCollection.deleteOne(query);
       res.send(result);
     })
-
-
 
 
     // Send a ping to confirm a successful connection
