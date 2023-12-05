@@ -205,9 +205,14 @@ async function run() {
     app.get("/reviews", async (req, res) => {
       const email = req.query?.email;
       const query = { email: email };
-      const result = await reviewCollection.find(query).toArray();
+      if (query.email) {
+        const result = await reviewCollection.find(query).toArray();
+        return res.send(result);
+      }
+      const result = await reviewCollection.find().toArray();
       res.send(result);
     })
+    
 
     app.get("/reviews/:id", async (req, res) => {
       const id = req.params.id;
@@ -289,7 +294,7 @@ async function run() {
 
     app.delete("/request/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { meal_id: id };
+      const query = { _id: new ObjectId(id) };
       const result = await requestCollection.deleteOne(query);
       res.send(result);
     })
