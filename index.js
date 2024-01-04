@@ -30,6 +30,7 @@ async function run() {
 
     const userCollection = client.db("UniFood").collection("users");
     const mealCollection = client.db("UniFood").collection("meals");
+    const upcomingCollection = client.db("UniFood").collection("upcomingMeals");
     const reviewCollection = client.db("UniFood").collection("reviews");
     const packageCollection = client.db("UniFood").collection("packages");
     const requestCollection = client.db("UniFood").collection("request");
@@ -142,7 +143,7 @@ async function run() {
     })
 
     /*-----------------------------------------------
-                    Meal Related APIs
+                Meal Related APIs
     ------------------------------------------------*/
     app.get("/meals", async (req, res) => {
       const priceRange = req.query?.priceRange?.split("-");
@@ -174,6 +175,12 @@ async function run() {
       res.send(result);
     })
 
+    app.post("/meals", verifyToken, verifyAdmin, async (req, res) => {
+      const newMeal = req.body;
+      const result = await mealCollection.insertOne(newMeal);
+      res.send(result);
+    })
+
     app.patch("/meals/:id", async (req, res) => {
       const id = req.params.id;
       const increaseValue = req.body;
@@ -200,6 +207,15 @@ async function run() {
     })
 
     /*-----------------------------------------------
+                Upcoming Related APIs
+    ------------------------------------------------*/
+    app.post("/upcoming", verifyToken, verifyAdmin, async (req, res) => {
+      const upcomingMeal = req.body;
+      const result = await upcomingCollection.insertOne(upcomingMeal);
+      res.send(result);
+    })
+
+    /*-----------------------------------------------
                 Reviews Related APIs
     ------------------------------------------------*/
     app.get("/reviews", async (req, res) => {
@@ -212,7 +228,7 @@ async function run() {
       const result = await reviewCollection.find().toArray();
       res.send(result);
     })
-    
+
 
     app.get("/reviews/:id", async (req, res) => {
       const id = req.params.id;
